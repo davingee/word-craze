@@ -1,17 +1,21 @@
-<%= render "/shared/margin_bottom" %>
-<div class="about_page effects">
-  <h2>About the Word Craze Game</h2>
-  <p>
-    The Word Craze game is an association game. The game is now in beta so the more you play the more info there will be to play with. 
+<% content_for :title, "About — Wordcraze" %>
+
+<div class="max-w-2xl mx-auto py-12 px-4">
+  <h2 class="text-3xl font-bold text-gray-900 mb-4">About the Word Craze Game</h2>
+  <p class="text-gray-600 mb-6">
+    Wordcraze is an association game. The game grows richer the more people play —
+    every word association you submit teaches the game something new.
   </p>
 
-  <h2>
-    What can I do?
-  </h2>
-  <p>
-    You can associate words with other words, search for a word to see its associations, or you can click on the nodes and follow an interesting associative path, visually!
+  <h3 class="text-xl font-semibold text-gray-900 mb-2">What can I do?</h3>
+  <p class="text-gray-600 mb-4">
+    You can associate words with other words, search for any word to see its associations,
+    or click on the nodes in the graph and follow an interesting associative path, visually!
   </p>
-  <p>
-    I hope you enjoy and if you have any questions or comments please feel free to <%= link_to "email me.", give_feedback_path %>
+
+  <p class="text-gray-600">
+    Questions or comments?
+    <%= link_to "Send us feedback.", give_feedback_path,
+        class: "text-blue-600 hover:text-blue-800 underline" %>
   </p>
 </div>

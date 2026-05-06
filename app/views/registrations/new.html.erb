@@ -1,0 +1,49 @@
+<% content_for :title, "Register — Wordcraze" %>
+
+<div class="min-h-full flex items-center justify-center py-16 px-4">
+  <div class="w-full max-w-sm space-y-6">
+    <div class="text-center">
+      <h2 class="text-3xl font-extrabold text-gray-900">Create account</h2>
+      <p class="mt-2 text-sm text-gray-500">Register with a passkey — no password needed</p>
+    </div>
+
+    <div data-controller="webauthn"
+         data-webauthn-challenge-url-value="<%= registration_challenge_path %>">
+      <div data-webauthn-target="error"
+           class="hidden mb-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-red-700 text-sm">
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+          <input type="text"
+                 data-webauthn-target="username"
+                 autocomplete="username"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input type="email"
+                 data-webauthn-target="email"
+                 autocomplete="email"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+        </div>
+
+        <button data-action="click->webauthn#register"
+                class="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+          </svg>
+          Register with passkey
+        </button>
+      </div>
+    </div>
+
+    <p class="text-center text-sm text-gray-500">
+      Already have an account?
+      <%= link_to "Sign in", new_session_path,
+          class: "font-medium text-blue-600 hover:text-blue-500" %>
+    </p>
+  </div>
+</div>

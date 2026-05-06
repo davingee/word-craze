@@ -1,11 +1,64 @@
-<% content_for :footer do %>
-  <%= render :partial => "/shared/footer" %>
-<% end %>
-<% content_for :search do %>
-  <%= render :partial => "/home/search" %>
-<% end %>
-<%= javascript_tag do %>
-  svg = new myGraph("#container");
-<% end %>
-<%= render "index" %>
+<% if @word.nil? %>
+  <div class="max-w-lg mx-auto py-20 px-4 text-center">
+    <h2 class="text-2xl font-bold text-gray-700 mb-3">No words yet!</h2>
+    <p class="text-gray-500 mb-6">
+      The database is empty. Run <code class="bg-gray-100 px-1 rounded">rails db:seed</code>
+      to load starter words, or search for any word above to get started.
+    </p>
+    <%= form_with url: search_path, method: :get, data: { turbo: false } do |f| %>
+      <div class="flex gap-2 justify-center">
+        <%= f.text_field :q,
+            placeholder: "Type any word…",
+            autofocus: true,
+            class: "border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" %>
+        <%= f.submit "Go", class: "bg-blue-600 text-white px-4 py-2 rounded-lg text-sm cursor-pointer hover:bg-blue-700" %>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <% content_for :title, @word.name.capitalize + " — Wordcraze" %>
 
+  <div class="flex flex-col" style="height: calc(100vh - 64px)">
+    <%# D3 force graph — Stimulus controller fetches /api/words/:id/associations %>
+    <div id="graph-container"
+         class="flex-1 bg-white"
+         data-controller="graph"
+         data-graph-url-value="<%= api_word_associations_path(@word) %>">
+    </div>
+
+    <%# Game controls %>
+    <div class="bg-white border-t shadow-lg py-4 px-4 md:px-6 flex-shrink-0">
+      <div class="max-w-lg mx-auto space-y-3">
+        <ul class="text-xs text-gray-400 list-disc pl-4 space-y-0.5">
+          <li>Press Enter to skip to a new word</li>
+          <li>Click nodes in the graph to explore associations</li>
+        </ul>
+
+        <div class="flex items-center justify-between">
+          <span class="text-2xl font-bold text-blue-900"><%= @word.name %></span>
+          <div class="text-xs text-gray-400 space-x-2">
+            <%= link_to "spam", flag_or_r_rated_path(id: @word.id, type: "flagged"),
+                class: "hover:text-red-500 transition-colors" %>
+            <span>|</span>
+            <%= link_to "r-rated", flag_or_r_rated_path(id: @word.id, type: "r_rated"),
+                class: "hover:text-orange-500 transition-colors" %>
+          </div>
+        </div>
+
+        <%= form_with model: Association.new, url: associations_path do |f| %>
+          <%= f.hidden_field :word_id, value: @word.id %>
+          <div class="flex gap-2">
+            <%= f.text_field :name,
+                id: "association_name",
+                placeholder: "What does \"#{@word.name}\" remind you of?",
+                autocomplete: "off",
+                autofocus: true,
+                class: "flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" %>
+            <%= f.submit "Associate",
+                class: "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>

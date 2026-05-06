@@ -1,86 +1,50 @@
 class ApplicationController < ActionController::Base
-  protect_from_forgery
-  helper_method :the_association, :random_word, :require_admin, :admin, :first_random_word, :get_associations
-  
+  allow_browser versions: :modern
+
+  helper_method :current_user, :user_signed_in?, :admin?
+
+  private
+
+  def current_user
+    @current_user ||= User.find_by(id: session[:user_id]) if session[:user_id]
+  end
+
+  def user_signed_in?
+    current_user.present?
+  end
+
+  def admin?
+    current_user&.admin?
+  end
+
+  def require_login
+    unless user_signed_in?
+      flash[:alert] = "Please sign in to continue."
+      redirect_to new_session_path
+    end
+  end
+
   def random_word
-    @random_word = Word.find_by_sql("SELECT name, id FROM words WHERE associations_count > 5 and flagged < 6 ORDER BY RAND() LIMIT 1").first
+    @random_word ||= Word.random_playable
   end
-  
-  def first_random_word    
-    @first_random_word = Word.find_by_sql("SELECT name, id FROM words WHERE associations_count > 5 and flagged < 6 ORDER BY RAND() LIMIT 50").last
-  end
-  
+
   def get_associations(word)
-    @get_associations ||= Association.find_by_sql("SELECT id, association_id, count FROM associations WHERE scrubbed is true and user_word is false and word_id = #{word.id} ORDER BY RAND() LIMIT 10") + 
-    word.associations.find_by_sql("SELECT id, association_id, count FROM associations WHERE user_word is true and word_id = #{word.id} ORDER BY RAND() LIMIT 15")
-    # @get_associations ||= (word.associations.where(:scrubbed => true).select([:association_id, :count, :id]).limit(10) + word.associations.where(:user_word => true).select([:association_id, :count, :id]).limit(15))
-  end
+    @get_associations ||= begin
+      scrubbed = Association
+        .joins("JOIN words AS w ON w.id = associations.association_id")
+        .where(word_id: word.id, scrubbed: true, user_word: false)
+        .select("associations.id, associations.association_id, associations.count, w.name AS word_name")
+        .order(Arel.sql("RANDOM()"))
+        .limit(10)
 
-  def the_association
-    @association ||= Association.new
-  end
-  
-  before_filter :city_state_from_ip_or_postal_code
+      user_made = Association
+        .joins("JOIN words AS w ON w.id = associations.association_id")
+        .where(word_id: word.id, user_word: true)
+        .select("associations.id, associations.association_id, associations.count, w.name AS word_name")
+        .order(Arel.sql("RANDOM()"))
+        .limit(15)
 
-  def city_state_from_ip_or_postal_code(postal_code=false)
-    unless session[:location]
-      Geokit::Geocoders::google = 'ABQIAAAAjkocf-uapJh4zp82saxrjRTJQa0g3IQ9GZqIMmInSLzwtGDKaBTVoUPc9vOiQIy1jPApkJIrsM5V6g'
-      if postal_code 
-        # if Rails.env == "development"
-        #   ip = "206.127.79.163"
-        # else
-          ip = request.remote_ip 
-        # end
-        results = Geokit::Geocoders::GoogleGeocoder.geocode(Geokit::Geocoders::MultiGeocoder.geocode(ip))
-        country = results.country
-        res = Geokit::Geocoders::GoogleGeocoder.geocode("#{country} #{postal_code}")
-      else      
-        # ip = request.remote_ip 
-        # ip = "206.127.79.163" if Rails.env == "development"
-        if Rails.env == "development"
-          ip = "206.127.79.163"
-        else
-          ip = request.remote_ip 
-        end
-        res = Geokit::Geocoders::GoogleGeocoder.geocode(Geokit::Geocoders::MultiGeocoder.geocode(ip))
-      end
-      if res.success
-        city = res.city
-        city = res.district if city.blank?
-        region = res.state
-        country = res.country
-        # city_db = Country.find_by_iso3(country).regions.find_by_code(region).cities.find_by_city(city)
-        session[:location] = {:city => city, :country => country, :region => region, :latitude => res.lat, :longitude => res.lng, :postal_code => res.zip }
-      end
+      (scrubbed.to_a + user_made.to_a).uniq { |a| a.association_id }
     end
   end
-
-
-  def can_edit?(user_id)
-    if current_user
-      admin or current_user.id == user_id  
-    end
-  end
-  
-  def admin
-    if current_user
-      if current_user.role == "admin"
-        return true
-      end
-    end
-  end
-  
-  def require_admin
-    unless admin
-      flash[:error] = "You do not have permission to access this page." 
-      redirect_to "/" # Prevents the current action from running
-    end
-  end
-  
-  
-  def redirect_back_or_default(default)
-    redirect_to(session[:return_to] || default)
-    session[:return_to] = nil
-  end
-
 end

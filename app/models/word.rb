@@ -1,48 +1,20 @@
-class Word < ActiveRecord::Base
-  
-  attr_accessible :name, :flagged, :rated_r, :user_word
-  validates :name, :length => { :maximum => 40 }
-  
-  has_many :associations
-  has_many :associated_words, :through => :associations
-  has_many :user_associations
+class Word < ApplicationRecord
+  has_many :associations, dependent: :destroy
+  has_many :user_associations, dependent: :destroy
 
-  before_create :downcase_name  
+  validates :name, presence: true, uniqueness: true, length: { maximum: 40 }
+
+  before_validation :downcase_name
+
+  scope :playable, -> { where("associations_count > 5 AND flagged < 6") }
+
+  def self.random_playable
+    playable.order(Arel.sql("RANDOM()")).first
+  end
+
+  private
+
   def downcase_name
-    self.name = self.name.downcase
+    self.name = name.downcase.strip if name
   end
-  
-  def search
-    q = "absolute"
-    # w = Word
-    # Word.conditions("words.name LIKE ?", "%#{q.downcase}%")
-    Word.conditions("words.name = ?", "#{q.downcase}")
-    # w.where(:scrubbed => true).limit(15) + w.where(:scrubbed => false)
-    
-    # scope = Association.scoped({})
-    # scope = scope.conditions "associations.count < ?", 1" # only 5 of these
-  end
-  
-
-
-  def self.user_and_scrubbed
-    where(:scrubbed => true).limit(15) + where(:scrubbed => false)
-    # a = Association
-    # (a.where("count = 1").limit(15) + a.where("count > 1").limit(10))
-    # a
-  end
-  
-  def find_words(keywords, associations)
-    scope = Word.scoped({})
-    scope = scope.conditions("words.name LIKE ?", "%#{keywords}%").limit(20) unless keywords.blank?
-    scope = scope.conditions("words.scrubbed = ?", true).limit(5) # only 5 of these
-    # scope = scope.conditions("words.associations <= ?", associations) unless associations.blank?
-    scope
-  end
-  
-  def self.most_recent
-    order("created_at desc").limit(10)
-  end
-  
-  
 end

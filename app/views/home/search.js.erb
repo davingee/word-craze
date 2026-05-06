@@ -1,8 +1,0 @@
-<% if @word.blank? %>
-  svg.clear();
-  $("#throbber").hide();
-  $("#search_field").val("No Results");
-<% else %>
-  <%= render "/shared/reload.js" %>
-  $("#s").val("").select();
-<% end %>

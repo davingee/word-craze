@@ -1,29 +1,24 @@
 class HomeController < ApplicationController
-
-  respond_to :html, :js
-
   def index
-    if params[:association_id]
-      @word = Word.find(params[:association_id])
-      @associations = get_associations(@word) 
+    @word = if params[:association_id]
+      Word.find_by(id: params[:association_id])
+    elsif params[:id]
+      Word.find_by(id: params[:id])
     else
-      @word = Word.find(params[:id] || first_random_word)
-      @associations = get_associations(@word) 
+      random_word
     end
   end
 
   def search
-    unless params[:q].blank?
-      @word = Word.find_or_create_by_name(params[:q].downcase)
-      @word.user_word = true
-      @word.save
-      @associations = get_associations(@word) 
-    else
-      redirect_to root_path
+    if params[:q].blank?
+      redirect_to root_path and return
     end
+
+    @word = Word.find_or_create_by(name: params[:q].strip.downcase)
+    @word.update(user_word: true)
+    redirect_to root_path(id: @word.id)
   end
-  
+
   def about
   end
-  
 end

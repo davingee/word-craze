@@ -1,9 +1,5 @@
-class UserAssociation < ActiveRecord::Base
-
-  attr_accessible :user_id, :association_id, :word_id, :city, :region, :country
-
+class UserAssociation < ApplicationRecord
   belongs_to :association
-  belongs_to :user
   belongs_to :word
-  
+  belongs_to :user, optional: true
 end

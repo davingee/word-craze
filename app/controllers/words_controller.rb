@@ -1,6 +1,6 @@
 class WordsController < ApplicationController
   def index
-    @words = Word.all
+    @words = Word.order(:name).page(params[:page])
   end
 
   def show
@@ -8,49 +8,58 @@ class WordsController < ApplicationController
   end
 
   def new
+    require_login
     @word = Word.new
   end
 
   def create
-    @word = Word.new(params[:word])
+    require_login
+    @word = Word.new(word_params)
     if @word.save
-      redirect_to @word, :notice => "Successfully created word."
+      redirect_to @word, notice: "Word created."
     else
-      render :action => 'new'
+      render :new, status: :unprocessable_entity
     end
   end
 
   def edit
+    require_login
     @word = Word.find(params[:id])
   end
 
-  def flag_or_r_rated
-    @word = Word.find(params[:id])
-    if params[:type] == "flagged"
-      @type = "flagged"
-      @word.flagged = @word.flagged + 1       
-      @word.save
-    elsif params[:type] == "r_rated"
-      @type = "r_rated"
-      @word.r_rated = @word.r_rated + 1 
-      @word.save
-    end
-    @word = first_random_word
-    @associations = get_associations(@word) 
-  end
-  
   def update
+    require_login
     @word = Word.find(params[:id])
-    if @word.update_attributes(params[:word])
-      redirect_to @word, :notice  => "Successfully updated word."
+    if @word.update(word_params)
+      redirect_to @word, notice: "Word updated."
     else
-      render :action => 'edit'
+      render :edit, status: :unprocessable_entity
     end
   end
 
   def destroy
+    require_login
     @word = Word.find(params[:id])
     @word.destroy
-    redirect_to words_url, :notice => "Successfully destroyed word."
+    redirect_to words_url, notice: "Word removed."
+  end
+
+  def flag_or_r_rated
+    word = Word.find(params[:id])
+    case params[:type]
+    when "flagged"
+      word.increment!(:flagged)
+      flash[:notice] = "Word flagged as spam."
+    when "r_rated"
+      word.increment!(:r_rated)
+      flash[:notice] = "Word marked as R-rated."
+    end
+    redirect_to root_path
+  end
+
+  private
+
+  def word_params
+    params.require(:word).permit(:name, :scrubbed, :user_word)
   end
 end
